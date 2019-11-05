@@ -18,9 +18,8 @@
 
 package co.rsk.rpc.modules.trace;
 
-import co.rsk.ExecutionScopeFactory;
+import co.rsk.core.ExecutionScopeFactory;
 import co.rsk.config.VmConfig;
-import co.rsk.core.bc.BlockExecutor;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ethereum.core.Block;

@@ -1,4 +1,4 @@
-package co.rsk;
+package co.rsk.core;
 
 import co.rsk.config.RskSystemProperties;
 import co.rsk.core.TransactionExecutorFactory;
