@@ -226,6 +226,7 @@ public class RskContext implements NodeBootstrapper {
     private BridgeSupportFactory bridgeSupportFactory;
     private PeersInformation peersInformation;
     private StatusResolver statusResolver;
+    private ExecutionScopeFactory executionScopeFactory;
     private KeyValueDataSource trieDataSource;
 
     public RskContext(String[] args) {
@@ -358,6 +359,18 @@ public class RskContext implements NodeBootstrapper {
         }
 
         return trieStore;
+    }
+
+    public ExecutionScopeFactory getExecutionScopeFactory() {
+        if (executionScopeFactory == null) {
+            executionScopeFactory = new ExecutionScopeFactory(
+                    rskSystemProperties,
+                    getTrieDataSource("unitrie"),
+                    getStateRootHandler(),
+                    getTransactionExecutorFactory());
+        }
+
+        return executionScopeFactory;
     }
 
     public BlockExecutor getBlockExecutor() {
