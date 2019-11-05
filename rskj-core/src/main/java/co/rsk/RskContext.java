@@ -226,6 +226,7 @@ public class RskContext implements NodeBootstrapper {
     private BridgeSupportFactory bridgeSupportFactory;
     private PeersInformation peersInformation;
     private StatusResolver statusResolver;
+    private KeyValueDataSource trieDataSource;
 
     public RskContext(String[] args) {
         this(new CliArgs.Parser<>(
@@ -853,15 +854,21 @@ public class RskContext implements NodeBootstrapper {
 
     protected TrieStore buildTrieStore(String name) {
         RskSystemProperties rskSystemProperties = getRskSystemProperties();
-        String databaseDir = rskSystemProperties.databaseDir();
         int statesCacheSize = rskSystemProperties.getStatesCacheSize();
-        KeyValueDataSource ds = makeDataSource(name, databaseDir);
 
+        KeyValueDataSource ds = getTrieDataSource(name);
         if (statesCacheSize != 0) {
             ds = new DataSourceWithCache(ds, statesCacheSize);
         }
 
         return new TrieStoreImpl(ds);
+    }
+    
+    private KeyValueDataSource getTrieDataSource(String name) {
+        if (trieDataSource == null) {
+            trieDataSource = makeDataSource(name, getRskSystemProperties().databaseDir());
+        }
+        return trieDataSource;
     }
 
     private TrieStore buildMultiTrieStore(int numberOfEpochs) throws IOException {
