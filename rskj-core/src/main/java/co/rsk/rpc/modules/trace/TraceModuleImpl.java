@@ -18,6 +18,7 @@
 
 package co.rsk.rpc.modules.trace;
 
+import co.rsk.ExecutionScopeFactory;
 import co.rsk.config.VmConfig;
 import co.rsk.core.bc.BlockExecutor;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -37,7 +38,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static org.ethereum.rpc.TypeConverter.stringHexToBigInteger;
@@ -49,22 +49,21 @@ public class TraceModuleImpl implements TraceModule {
     private final Blockchain blockchain;
     private final BlockStore blockStore;
     private final ReceiptStore receiptStore;
-
-    private final BlockExecutor blockExecutor;
+    private final ExecutionScopeFactory executionScopeFactory;
 
     public TraceModuleImpl(
             Blockchain blockchain,
             BlockStore blockStore,
             ReceiptStore receiptStore,
-            BlockExecutor blockExecutor) {
+            ExecutionScopeFactory executionScopeFactory) {
         this.blockchain = blockchain;
         this.blockStore = blockStore;
         this.receiptStore = receiptStore;
-        this.blockExecutor = blockExecutor;
+        this.executionScopeFactory = executionScopeFactory;
     }
 
     @Override
-    public JsonNode traceTransaction(String transactionHash) throws Exception {
+    public JsonNode traceTransaction(String transactionHash) {
         logger.trace("trace_transaction({})", transactionHash);
 
         byte[] hash = stringHexToByteArray(transactionHash);
@@ -81,7 +80,9 @@ public class TraceModuleImpl implements TraceModule {
         txInfo.setTransaction(tx);
 
         ProgramTraceProcessor programTraceProcessor = new ProgramTraceProcessor();
-        this.blockExecutor.traceBlock(programTraceProcessor, VmConfig.LIGHT_TRACE, block, parent.getHeader(), false, false);
+
+        ExecutionScopeFactory.ExecutionScope scope = executionScopeFactory.newScope(5000);
+        scope.traceBlock(programTraceProcessor, VmConfig.LIGHT_TRACE, block, parent.getHeader());
 
         SummarizedProgramTrace programTrace = (SummarizedProgramTrace)programTraceProcessor.getProgramTrace(tx.getHash());
 
@@ -109,9 +110,11 @@ public class TraceModuleImpl implements TraceModule {
 
         List<TransactionTrace> blockTraces = new ArrayList<>();
 
+        ExecutionScopeFactory.ExecutionScope scope = executionScopeFactory.newScope(5000);
+
         if (block.getNumber() != 0) {
             ProgramTraceProcessor programTraceProcessor = new ProgramTraceProcessor();
-            this.blockExecutor.traceBlock(programTraceProcessor, VmConfig.LIGHT_TRACE, block, parent.getHeader(), false, false);
+            scope.traceBlock(programTraceProcessor, VmConfig.LIGHT_TRACE, block, parent.getHeader());
 
             for (Transaction tx : block.getTransactionsList()) {
                 TransactionInfo txInfo = receiptStore.getInMainChain(tx.getHash().getBytes(), this.blockStore);
