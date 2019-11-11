@@ -38,6 +38,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.ethereum.rpc.TypeConverter.stringHexToBigInteger;
 import static org.ethereum.rpc.TypeConverter.stringHexToByteArray;
@@ -50,6 +52,12 @@ public class TraceModuleImpl implements TraceModule {
     private final ReceiptStore receiptStore;
     private final ExecutionScopeFactory executionScopeFactory;
 
+    private final static int TRACE_PER_SCOPE = 1000;
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
+    private AtomicInteger traces = new AtomicInteger(0);
+
+    private ExecutionScopeFactory.ExecutionScope scope;
+
     public TraceModuleImpl(
             Blockchain blockchain,
             BlockStore blockStore,
@@ -59,6 +67,7 @@ public class TraceModuleImpl implements TraceModule {
         this.blockStore = blockStore;
         this.receiptStore = receiptStore;
         this.executionScopeFactory = executionScopeFactory;
+        this.scope = this.executionScopeFactory.newScope(10000);
     }
 
     @Override
@@ -80,8 +89,25 @@ public class TraceModuleImpl implements TraceModule {
 
         ProgramTraceProcessor programTraceProcessor = new ProgramTraceProcessor();
 
-        ExecutionScopeFactory.ExecutionScope scope = executionScopeFactory.newScope(5000);
-        scope.traceBlock(programTraceProcessor, VmConfig.LIGHT_TRACE, block, parent.getHeader());
+        if (traces.getAndIncrement() >= TRACE_PER_SCOPE) {
+            lock.writeLock().lock();
+            try {
+                if (traces.get() == TRACE_PER_SCOPE) {
+                    traces.set(0);
+                    scope = executionScopeFactory.newScope(10000);
+                }
+            } finally {
+                lock.writeLock().unlock();
+            }
+        }
+
+        lock.readLock().lock();
+        try {
+            scope.traceBlock(programTraceProcessor, VmConfig.LIGHT_TRACE, block, parent.getHeader());
+        } finally {
+            lock.readLock().unlock();
+        }
+
 
         SummarizedProgramTrace programTrace = (SummarizedProgramTrace)programTraceProcessor.getProgramTrace(tx.getHash());
 
@@ -95,7 +121,7 @@ public class TraceModuleImpl implements TraceModule {
     }
 
     @Override
-    public JsonNode traceBlock(String blockArgument) throws Exception {
+    public JsonNode traceBlock(String blockArgument) {
         logger.trace("trace_block({})", blockArgument);
 
         Block block = this.getByJsonArgument(blockArgument);
@@ -109,11 +135,28 @@ public class TraceModuleImpl implements TraceModule {
 
         List<TransactionTrace> blockTraces = new ArrayList<>();
 
-        ExecutionScopeFactory.ExecutionScope scope = executionScopeFactory.newScope(5000);
+        if (traces.getAndIncrement() >= TRACE_PER_SCOPE) {
+            lock.writeLock().lock();
+            try {
+                if (traces.get() >= TRACE_PER_SCOPE) {
+                    traces.set(0);
+                    scope = executionScopeFactory.newScope(10000);
+                }
+            } finally {
+                lock.writeLock().unlock();
+            }
+        }
+
 
         if (block.getNumber() != 0) {
             ProgramTraceProcessor programTraceProcessor = new ProgramTraceProcessor();
-            scope.traceBlock(programTraceProcessor, VmConfig.LIGHT_TRACE, block, parent.getHeader());
+
+            lock.readLock().lock();
+            try {
+                scope.traceBlock(programTraceProcessor, VmConfig.LIGHT_TRACE, block, parent.getHeader());
+            } finally {
+                lock.readLock().unlock();
+            }
 
             for (Transaction tx : block.getTransactionsList()) {
                 TransactionInfo txInfo = receiptStore.getInMainChain(tx.getHash().getBytes(), this.blockStore);
