@@ -37,7 +37,7 @@ public class DataSourceWithCache implements KeyValueDataSource {
     public DataSourceWithCache(KeyValueDataSource base, int cacheSize) {
         this.base = base;
         this.uncommittedCache = new HashMap<>();
-        this.committedCache = new MaxSizeHashMap<>(cacheSize, true);
+        this.committedCache = Collections.synchronizedMap(new MaxSizeHashMap<>(cacheSize, true));
     }
 
     @Override
@@ -167,8 +167,8 @@ public class DataSourceWithCache implements KeyValueDataSource {
 
     @Override
     public synchronized void flush() {
+        lock.writeLock().lock();
         try {
-            lock.writeLock().lock();
             Map<ByteArrayWrapper, byte[]> uncommittedBatch = uncommittedCache.entrySet().stream().filter(e -> e.getValue() != null).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
             Set<ByteArrayWrapper> uncommittedKeysToRemove = uncommittedCache.entrySet().stream().filter(e -> e.getValue() == null).map(Map.Entry::getKey).collect(Collectors.toSet());
             base.updateBatch(uncommittedBatch, uncommittedKeysToRemove);
