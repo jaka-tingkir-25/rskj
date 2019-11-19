@@ -124,9 +124,6 @@ public class DataSourceWithCache implements KeyValueDataSource {
 
         try {
             Stream<ByteArrayWrapper> baseKeys = base.keys().stream().map(ByteArrayWrapper::new);
-            Stream<ByteArrayWrapper> committedKeys = committedCache.entrySet().stream()
-                    .filter(e -> e.getValue() != null)
-                    .map(Map.Entry::getKey);
             Stream<ByteArrayWrapper> uncommittedKeys = uncommittedCache.entrySet().stream()
                     .filter(e -> e.getValue() != null)
                     .map(Map.Entry::getKey);
@@ -134,7 +131,7 @@ public class DataSourceWithCache implements KeyValueDataSource {
                     .filter(e -> e.getValue() == null)
                     .map(Map.Entry::getKey)
                     .collect(Collectors.toSet());
-            Set<ByteArrayWrapper> knownKeys = Stream.concat(Stream.concat(baseKeys, committedKeys), uncommittedKeys)
+            Set<ByteArrayWrapper> knownKeys = Stream.concat(baseKeys, uncommittedKeys)
                     .collect(Collectors.toSet());
             knownKeys.removeAll(uncommittedKeysToRemove);
 
