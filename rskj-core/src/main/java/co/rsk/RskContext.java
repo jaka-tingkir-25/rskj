@@ -148,6 +148,7 @@ public class RskContext implements NodeBootstrapper {
     private static Logger logger = LoggerFactory.getLogger(RskContext.class);
 
     private final CliArgs<NodeCliOptions, NodeCliFlags> cliArgs;
+    public boolean USESNAPPY = true;
 
     private RskSystemProperties rskSystemProperties;
     private Blockchain blockchain;
@@ -831,7 +832,7 @@ public class RskContext implements NodeBootstrapper {
 
                 boolean gcWasEnabled = !multiTrieStorePaths.isEmpty();
                 if (gcWasEnabled) {
-                    LevelDbDataSource.mergeDataSources(trieStorePath, multiTrieStorePaths);
+                    LevelDbDataSource.mergeDataSources(trieStorePath, multiTrieStorePaths, USESNAPPY);
                     // cleanup MultiTrieStore data sources
                     multiTrieStorePaths.stream()
                             .map(Path::toString)
@@ -884,7 +885,7 @@ public class RskContext implements NodeBootstrapper {
     }
 
     protected ReceiptStore buildReceiptStore() {
-        KeyValueDataSource ds = LevelDbDataSource.makeDataSource(Paths.get(getRskSystemProperties().databaseDir(), "receipts"));
+        KeyValueDataSource ds = LevelDbDataSource.makeDataSource(Paths.get(getRskSystemProperties().databaseDir(), "receipts"), USESNAPPY);
         return new ReceiptStoreImpl(ds);
     }
 
@@ -913,7 +914,7 @@ public class RskContext implements NodeBootstrapper {
 
     protected TrieStore buildTrieStore(Path trieStorePath) {
         int statesCacheSize = getRskSystemProperties().getStatesCacheSize();
-        KeyValueDataSource ds = LevelDbDataSource.makeDataSource(trieStorePath);
+        KeyValueDataSource ds = LevelDbDataSource.makeDataSource(trieStorePath, USESNAPPY);
 
         if (statesCacheSize != 0) {
             ds = new DataSourceWithCache(ds, statesCacheSize);
@@ -959,7 +960,7 @@ public class RskContext implements NodeBootstrapper {
     }
 
     protected org.ethereum.db.BlockStore buildBlockStore() {
-        return buildBlockStore(getRskSystemProperties().databaseDir());
+        return buildBlockStore(getRskSystemProperties().databaseDir(), USESNAPPY);
     }
 
     protected RskSystemProperties buildRskSystemProperties() {
@@ -980,7 +981,7 @@ public class RskContext implements NodeBootstrapper {
     }
 
     protected StateRootHandler buildStateRootHandler() {
-        KeyValueDataSource stateRootsDB = LevelDbDataSource.makeDataSource(Paths.get(getRskSystemProperties().databaseDir(), "stateRoots"));
+        KeyValueDataSource stateRootsDB = LevelDbDataSource.makeDataSource(Paths.get(getRskSystemProperties().databaseDir(), "stateRoots"), USESNAPPY);
         return new StateRootHandler(getRskSystemProperties().getActivationConfig(), getTrieConverter(), stateRootsDB, new HashMap<>());
     }
 
@@ -1026,7 +1027,7 @@ public class RskContext implements NodeBootstrapper {
             return null;
         }
 
-        KeyValueDataSource ds = LevelDbDataSource.makeDataSource(Paths.get(rskSystemProperties.databaseDir(), "wallet"));
+        KeyValueDataSource ds = LevelDbDataSource.makeDataSource(Paths.get(rskSystemProperties.databaseDir(), "wallet"), USESNAPPY);
         return new Wallet(ds);
     }
 
@@ -1626,7 +1627,7 @@ public class RskContext implements NodeBootstrapper {
         return minerClock;
     }
 
-    public org.ethereum.db.BlockStore buildBlockStore(String databaseDir) {
+    public org.ethereum.db.BlockStore buildBlockStore(String databaseDir, boolean useSnappy) {
         File blockIndexDirectory = new File(databaseDir + "/blocks/");
         File dbFile = new File(blockIndexDirectory, "index");
         if (!blockIndexDirectory.exists()) {
@@ -1641,7 +1642,7 @@ public class RskContext implements NodeBootstrapper {
                 .closeOnJvmShutdown()
                 .make();
 
-        KeyValueDataSource blocksDB = LevelDbDataSource.makeDataSource(Paths.get(databaseDir, "blocks"));
+        KeyValueDataSource blocksDB = LevelDbDataSource.makeDataSource(Paths.get(databaseDir, "blocks"), useSnappy);
 
         return new IndexedBlockStore(getBlockFactory(), blocksDB, new MapDBBlocksIndex(indexDB));
     }
