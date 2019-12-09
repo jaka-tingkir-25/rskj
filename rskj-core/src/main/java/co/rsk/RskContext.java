@@ -147,8 +147,8 @@ import java.util.Properties;
 public class RskContext implements NodeBootstrapper {
     private static Logger logger = LoggerFactory.getLogger(RskContext.class);
 
-    private final CliArgs<NodeCliOptions, NodeCliFlags> cliArgs;
-    public boolean USESNAPPY = true;
+    private CliArgs<NodeCliOptions, NodeCliFlags> cliArgs;
+    private boolean useSnappy;
 
     private RskSystemProperties rskSystemProperties;
     private Blockchain blockchain;
@@ -237,15 +237,16 @@ public class RskContext implements NodeBootstrapper {
     private Web3InformationRetriever web3InformationRetriever;
     private BootstrapImporter bootstrapImporter;
 
-    public RskContext(String[] args) {
+    public RskContext(String[] args, boolean useSnappy) {
         this(new CliArgs.Parser<>(
                 NodeCliOptions.class,
                 NodeCliFlags.class
-        ).parse(args));
+        ).parse(args), useSnappy);
     }
 
-    private RskContext(CliArgs<NodeCliOptions, NodeCliFlags> cliArgs) {
+    private RskContext(CliArgs<NodeCliOptions, NodeCliFlags> cliArgs, boolean useSnappy) {
         this.cliArgs = cliArgs;
+        this.useSnappy = useSnappy;
     }
 
     public BootstrapImporter getBootstrapImporter() {
@@ -832,7 +833,7 @@ public class RskContext implements NodeBootstrapper {
 
                 boolean gcWasEnabled = !multiTrieStorePaths.isEmpty();
                 if (gcWasEnabled) {
-                    LevelDbDataSource.mergeDataSources(trieStorePath, multiTrieStorePaths, USESNAPPY);
+                    LevelDbDataSource.mergeDataSources(trieStorePath, multiTrieStorePaths, useSnappy);
                     // cleanup MultiTrieStore data sources
                     multiTrieStorePaths.stream()
                             .map(Path::toString)
@@ -885,7 +886,7 @@ public class RskContext implements NodeBootstrapper {
     }
 
     protected ReceiptStore buildReceiptStore() {
-        KeyValueDataSource ds = LevelDbDataSource.makeDataSource(Paths.get(getRskSystemProperties().databaseDir(), "receipts"), USESNAPPY);
+        KeyValueDataSource ds = LevelDbDataSource.makeDataSource(Paths.get(getRskSystemProperties().databaseDir(), "receipts"), useSnappy);
         return new ReceiptStoreImpl(ds);
     }
 
@@ -914,7 +915,7 @@ public class RskContext implements NodeBootstrapper {
 
     protected TrieStore buildTrieStore(Path trieStorePath) {
         int statesCacheSize = getRskSystemProperties().getStatesCacheSize();
-        KeyValueDataSource ds = LevelDbDataSource.makeDataSource(trieStorePath, USESNAPPY);
+        KeyValueDataSource ds = LevelDbDataSource.makeDataSource(trieStorePath, useSnappy);
 
         if (statesCacheSize != 0) {
             ds = new DataSourceWithCache(ds, statesCacheSize);
@@ -960,7 +961,7 @@ public class RskContext implements NodeBootstrapper {
     }
 
     protected org.ethereum.db.BlockStore buildBlockStore() {
-        return buildBlockStore(getRskSystemProperties().databaseDir(), USESNAPPY);
+        return buildBlockStore(getRskSystemProperties().databaseDir(), useSnappy);
     }
 
     protected RskSystemProperties buildRskSystemProperties() {
@@ -981,7 +982,7 @@ public class RskContext implements NodeBootstrapper {
     }
 
     protected StateRootHandler buildStateRootHandler() {
-        KeyValueDataSource stateRootsDB = LevelDbDataSource.makeDataSource(Paths.get(getRskSystemProperties().databaseDir(), "stateRoots"), USESNAPPY);
+        KeyValueDataSource stateRootsDB = LevelDbDataSource.makeDataSource(Paths.get(getRskSystemProperties().databaseDir(), "stateRoots"), useSnappy);
         return new StateRootHandler(getRskSystemProperties().getActivationConfig(), getTrieConverter(), stateRootsDB, new HashMap<>());
     }
 
@@ -1027,7 +1028,7 @@ public class RskContext implements NodeBootstrapper {
             return null;
         }
 
-        KeyValueDataSource ds = LevelDbDataSource.makeDataSource(Paths.get(rskSystemProperties.databaseDir(), "wallet"), USESNAPPY);
+        KeyValueDataSource ds = LevelDbDataSource.makeDataSource(Paths.get(rskSystemProperties.databaseDir(), "wallet"), useSnappy);
         return new Wallet(ds);
     }
 
