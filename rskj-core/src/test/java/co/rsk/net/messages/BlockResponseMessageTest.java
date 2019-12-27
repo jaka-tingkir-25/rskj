@@ -44,7 +44,7 @@ public class BlockResponseMessageTest {
         Block block = new BlockGenerator().getBlock(1);
         BlockResponseMessage message = new BlockResponseMessage(100, block);
 
-        MessageVisitor visitor = mock(MessageVisitor.class);
+        MessageVisitor visitor = mock(MessageProcessVisitor.class);
 
         message.accept(visitor);
 

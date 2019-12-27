@@ -40,7 +40,7 @@ public class BodyRequestMessageTest {
         byte[] hash = new byte[]{0x0F};
         BodyRequestMessage message = new BodyRequestMessage(100, hash);
 
-        MessageVisitor visitor = mock(MessageVisitor.class);
+        MessageVisitor visitor = mock(MessageProcessVisitor.class);
 
         message.accept(visitor);
 

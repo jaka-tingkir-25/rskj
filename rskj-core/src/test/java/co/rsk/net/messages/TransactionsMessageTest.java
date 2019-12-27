@@ -50,7 +50,7 @@ public class TransactionsMessageTest {
         List<Transaction> txs = new LinkedList<>();
         TransactionsMessage message = new TransactionsMessage(txs);
 
-        MessageVisitor visitor = mock(MessageVisitor.class);
+        MessageVisitor visitor = mock(MessageProcessVisitor.class);
 
         message.accept(visitor);
 

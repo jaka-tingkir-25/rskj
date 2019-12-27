@@ -58,6 +58,10 @@ public class NodeMessageHandler implements MessageHandler, InternalService, Runn
     private volatile long lastStatusSent = System.currentTimeMillis();
     private volatile long lastTickSent = System.currentTimeMillis();
 
+    private long lastQueueDump = System.currentTimeMillis();
+    private static final int DUMP_THRESHOLD = 20_000;
+    private static final int DUMP_SEPARATION_SECONDS = 600;
+
     private BlockValidationRule blockValidationRule;
 
     private LinkedBlockingQueue<MessageTask> queue = new LinkedBlockingQueue<>();
@@ -99,7 +103,7 @@ public class NodeMessageHandler implements MessageHandler, InternalService, Runn
         long start = System.nanoTime();
         logger.trace("Process message type: {}", message.getMessageType());
 
-        MessageVisitor mv = new MessageVisitor(config,
+        MessageVisitor mv = new MessageProcessVisitor(config,
                 blockProcessor,
                 syncProcessor,
                 transactionGateway,
@@ -207,6 +211,16 @@ public class NodeMessageHandler implements MessageHandler, InternalService, Runn
         if (timeStatus.getSeconds() > 10) {
             sendStatusToAll();
             lastStatusSent = now;
+        }
+
+        //Dump queue status every 10 minutes if the queue surpasses a limit
+        if (queue.size() > DUMP_THRESHOLD && Duration.ofMillis(now - lastQueueDump).getSeconds() > DUMP_SEPARATION_SECONDS) {
+            String dumpInformation = String.format("[DumpTimestamp: %d]", now);
+            queue.forEach(task -> {
+                MessageDumpVisitor dumpVisitor = new MessageDumpVisitor(task.sender);
+                logger.debug("{}{}", dumpInformation, task.getMessage().accept(dumpVisitor));
+            });
+            lastQueueDump = now;
         }
     }
 

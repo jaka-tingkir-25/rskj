@@ -41,7 +41,7 @@ public class BlockHashRequestMessageTest {
         long someHeight = 99;
         BlockHashRequestMessage message = new BlockHashRequestMessage(someId, someHeight);
 
-        MessageVisitor visitor = mock(MessageVisitor.class);
+        MessageVisitor visitor = mock(MessageProcessVisitor.class);
 
         message.accept(visitor);
 

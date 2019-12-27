@@ -57,7 +57,7 @@ public class SkeletonResponseMessageTest {
         List<BlockIdentifier> blockIdentifiers = new LinkedList<>();
         SkeletonResponseMessage message = new SkeletonResponseMessage(1, blockIdentifiers);
 
-        MessageVisitor visitor = mock(MessageVisitor.class);
+        MessageVisitor visitor = mock(MessageProcessVisitor.class);
 
         message.accept(visitor);
 

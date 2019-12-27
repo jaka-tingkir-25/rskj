@@ -47,7 +47,7 @@ public class MessageVisitorTest {
         blockValidationRule = mock(BlockValidationRule.class);
         sender = mock(MessageChannel.class);
 
-        target = new MessageVisitor(
+        target = new MessageProcessVisitor(
                 config,
                 blockProcessor,
                 syncProcessor,

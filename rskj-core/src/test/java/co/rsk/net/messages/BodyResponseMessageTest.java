@@ -71,7 +71,7 @@ public class BodyResponseMessageTest {
 
         BodyResponseMessage message = new BodyResponseMessage(100, transactions, uncles);
 
-        MessageVisitor visitor = mock(MessageVisitor.class);
+        MessageVisitor visitor = mock(MessageProcessVisitor.class);
 
         message.accept(visitor);
 

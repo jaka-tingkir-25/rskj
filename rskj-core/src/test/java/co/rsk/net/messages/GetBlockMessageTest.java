@@ -39,7 +39,7 @@ public class GetBlockMessageTest {
         byte[] hash = new byte[]{0x0F};
         GetBlockMessage message = new GetBlockMessage(hash);
 
-        MessageVisitor visitor = mock(MessageVisitor.class);
+        MessageVisitor visitor = mock(MessageProcessVisitor.class);
 
         message.accept(visitor);
 

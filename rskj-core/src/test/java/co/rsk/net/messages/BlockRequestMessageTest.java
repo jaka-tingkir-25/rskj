@@ -43,7 +43,7 @@ public class BlockRequestMessageTest {
         byte[] hash = new BlockGenerator().getGenesisBlock().getHash().getBytes();
         BlockRequestMessage message = new BlockRequestMessage(100, hash);
 
-        MessageVisitor visitor = mock(MessageVisitor.class);
+        MessageVisitor visitor = mock(MessageProcessVisitor.class);
 
         message.accept(visitor);
 

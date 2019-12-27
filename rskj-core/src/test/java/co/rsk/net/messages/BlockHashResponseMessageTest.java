@@ -49,7 +49,7 @@ public class BlockHashResponseMessageTest {
 
         BlockHashResponseMessage message = new BlockHashResponseMessage(someId, hash);
 
-        MessageVisitor visitor = mock(MessageVisitor.class);
+        MessageVisitor visitor = mock(MessageProcessVisitor.class);
 
         message.accept(visitor);
 

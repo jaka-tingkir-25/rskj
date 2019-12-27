@@ -83,7 +83,7 @@ public class StatusMessageTest {
     public void accept() {
         StatusMessage message = new StatusMessage(mock(Status.class));
 
-        MessageVisitor visitor = mock(MessageVisitor.class);
+        MessageVisitor visitor = mock(MessageProcessVisitor.class);
 
         message.accept(visitor);
 

@@ -46,7 +46,7 @@ public class BlockMessageTest {
         Block block = mock(Block.class);
         BlockMessage message = new BlockMessage(block);
 
-        MessageVisitor visitor = mock(MessageVisitor.class);
+        MessageVisitor visitor = mock(MessageProcessVisitor.class);
 
         message.accept(visitor);
 

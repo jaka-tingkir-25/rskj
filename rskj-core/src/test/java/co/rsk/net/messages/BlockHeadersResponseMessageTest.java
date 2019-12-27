@@ -19,7 +19,7 @@ public class BlockHeadersResponseMessageTest {
 
         BlockHeadersResponseMessage message = new BlockHeadersResponseMessage(1, headers);
 
-        MessageVisitor visitor = mock(MessageVisitor.class);
+        MessageVisitor visitor = mock(MessageProcessVisitor.class);
 
         message.accept(visitor);
 

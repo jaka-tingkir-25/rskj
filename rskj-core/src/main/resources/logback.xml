@@ -63,7 +63,7 @@
     <logger name="peermonitor" level="INFO"/>
     <logger name="bridge" level="INFO"/>
     <logger name="rlp" level="INFO"/>
-    <logger name="messagehandler" level="INFO"/>
+    <logger name="messagehandler" level="DEBUG"/>
     <logger name="sync" level="INFO"/>
     <logger name="BtcToRskClient" level="INFO"/>
     <logger name="ui" level="INFO"/>

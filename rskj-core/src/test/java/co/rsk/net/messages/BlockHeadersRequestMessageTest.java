@@ -26,7 +26,7 @@ public class BlockHeadersRequestMessageTest {
         byte[] hash = HashUtil.randomHash();
         BlockHeadersRequestMessage message = new BlockHeadersRequestMessage(1, hash, 100);
 
-        MessageVisitor visitor = mock(MessageVisitor.class);
+        MessageVisitor visitor = mock(MessageProcessVisitor.class);
 
         message.accept(visitor);
 
