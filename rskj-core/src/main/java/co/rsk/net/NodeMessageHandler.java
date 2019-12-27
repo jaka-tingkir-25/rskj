@@ -127,7 +127,9 @@ public class NodeMessageHandler implements MessageHandler, InternalService, Runn
     private void tryAddMessage(MessageChannel sender, Message message) {
         Keccak256 encodedMessage = new Keccak256(HashUtil.keccak256(message.getEncoded()));
         if (!receivedMessages.contains(encodedMessage)) {
-            if (message.getMessageType() == MessageType.BLOCK_MESSAGE || message.getMessageType() == MessageType.TRANSACTIONS) {
+            if (message.getMessageType() == MessageType.BLOCK_MESSAGE
+                    || message.getMessageType() == MessageType.TRANSACTIONS
+                    || message.getMessageType() == MessageType.NEW_BLOCK_HASHES) {
                 if (this.receivedMessages.size() >= MAX_NUMBER_OF_MESSAGES_CACHED) {
                     this.receivedMessages.clear();
                 }
