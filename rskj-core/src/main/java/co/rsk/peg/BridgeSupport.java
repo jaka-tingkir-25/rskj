@@ -715,6 +715,8 @@ public class BridgeSupport {
             if (activations.isActive(ConsensusRule.RSKIP146)) {
                 // Add the TX
                 releaseTransactionSet.add(generatedTransaction, rskExecutionBlock.getNumber(), releaseRequest.getRskTxHash());
+                // Log the Release request
+                eventLogger.logReleaseBtcRequested(releaseRequest.getRskTxHash().getBytes(), generatedTransaction, releaseRequest.getAmount());
             } else {
                 releaseTransactionSet.add(generatedTransaction, rskExecutionBlock.getNumber());
             }
@@ -772,8 +774,6 @@ public class BridgeSupport {
             ReleaseTransactionSet.Entry entry = txsWithEnoughConfirmations.iterator().next();
             if (activations.isActive(ConsensusRule.RSKIP146)) {
                 txsWaitingForSignatures.put(entry.getRskTxHash(), entry.getTransaction());
-                TransactionOutput output = entry.getTransaction().getOutput(0);
-                eventLogger.logReleaseBtcRequested(entry.getRskTxHash().getBytes(), entry.getTransaction(), output.getValue());
             }
             else {
                 txsWaitingForSignatures.put(rskTx.getHash(), entry.getTransaction());

@@ -458,45 +458,30 @@ public class BridgeSupportTest {
         BridgeEventLogger mockedEventLogger = mock(BridgeEventLogger.class);
 
         Repository repository = createRepository();
-        Repository track = repository.startTracking();
 
-        BridgeStorageProvider provider0 = new BridgeStorageProvider(track, PrecompiledContracts.BRIDGE_ADDR, bridgeConstants, activationsBeforeForks);
-        UTXO utxo = new UTXO(Sha256Hash.wrap(HashUtil.randomHash()),0, Coin.COIN.multiply(2), 1, false, new Script(new byte[]{}));
-        provider0.getNewFederationBtcUTXOs().add(utxo);
+        Federation activeFederation = new Federation(
+                FederationTestUtils.getFederationMembers(3),
+                Instant.ofEpochMilli(1000),
+                0L,
+                NetworkParameters.fromID(NetworkParameters.ID_REGTEST)
+        );
 
-        BtcTransaction txs = new BtcTransaction(btcParams);
-        txs.addOutput(Coin.FIFTY_COINS, new BtcECKey());
-
-        BtcTransaction tx1 = new BtcTransaction(btcParams);
-        tx1.addInput(txs.getOutput(0));
-        tx1.getInput(0).disconnect();
-        tx1.addOutput(Coin.COIN, new BtcECKey());
-        provider0.getReleaseTransactionSet().add(tx1, 1L);
-
-        provider0.save();
-
-        track.commit();
-
-        track = repository.startTracking();
-        BridgeStorageProvider provider = new BridgeStorageProvider(track, PrecompiledContracts.BRIDGE_ADDR, bridgeConstants, activationsBeforeForks);
-
-        BlockGenerator blockGenerator = new BlockGenerator();
-        List<Block> blocks = blockGenerator.getSimpleBlockChain(blockGenerator.getGenesisBlock(), 10);
-
-        BlockChainBuilder builder = new BlockChainBuilder();
-        builder.setTesting(true).build();
-
-        for (Block block : blocks)
-            builder.getBlockStore().saveBlock(block, TEST_DIFFICULTY, true);
-
-        org.ethereum.core.Block rskCurrentBlock = blocks.get(9);
-        Transaction rskTx = new Transaction(TO_ADDRESS, DUST_AMOUNT, NONCE, GAS_PRICE, GAS_LIMIT, DATA, Constants.REGTEST_CHAIN_ID);
-        rskTx.sign(new ECKey().getPrivKeyBytes());
+        BridgeStorageProvider provider = new BridgeStorageProvider(repository, PrecompiledContracts.BRIDGE_ADDR, bridgeConstants, activationsBeforeForks);
+        UTXO utxo = new UTXO(Sha256Hash.wrap(HashUtil.randomHash()),0, Coin.COIN.multiply(2), 1, false, activeFederation.getP2SHScript());
+        provider.getNewFederationBtcUTXOs().add(utxo);
+        provider.setNewFederation(activeFederation);
 
         BridgeSupport bridgeSupport = getBridgeSupport(
-                bridgeConstants, provider, track, mockedEventLogger, rskCurrentBlock, null);
+                bridgeConstants, provider, repository, mockedEventLogger, mock(Block.class), null, activationsBeforeForks);
 
+        Transaction releaseTx = new Transaction(PrecompiledContracts.BRIDGE_ADDR.toString(),
+                co.rsk.core.Coin.fromBitcoin(Coin.COIN).asBigInteger(), NONCE, GAS_PRICE, GAS_LIMIT, DATA, Constants.REGTEST_CHAIN_ID);
+        releaseTx.sign(new ECKey().getPrivKeyBytes());
+        bridgeSupport.releaseBtc(releaseTx);
+
+        Transaction rskTx = new Transaction(TO_ADDRESS, DUST_AMOUNT, NONCE, GAS_PRICE, GAS_LIMIT, DATA, Constants.REGTEST_CHAIN_ID);
         bridgeSupport.updateCollections(rskTx);
+
         verify(mockedEventLogger, never()).logReleaseBtcRequested(any(byte[].class), any(BtcTransaction.class), any(Coin.class));
     }
 
@@ -508,44 +493,30 @@ public class BridgeSupportTest {
         BridgeEventLogger mockedEventLogger = mock(BridgeEventLogger.class);
 
         Repository repository = createRepository();
-        Repository track = repository.startTracking();
 
-        BridgeStorageProvider provider0 = new BridgeStorageProvider(track, PrecompiledContracts.BRIDGE_ADDR, bridgeConstants, activations);
-        UTXO utxo = new UTXO(Sha256Hash.wrap(HashUtil.randomHash()),0, Coin.COIN.multiply(2), 1, false, new Script(new byte[]{}));
-        provider0.getNewFederationBtcUTXOs().add(utxo);
+        Federation activeFederation = new Federation(
+                FederationTestUtils.getFederationMembers(3),
+                Instant.ofEpochMilli(1000),
+                0L,
+                NetworkParameters.fromID(NetworkParameters.ID_REGTEST)
+        );
 
-        BtcTransaction txs = new BtcTransaction(btcParams);
-        txs.addOutput(Coin.FIFTY_COINS, new BtcECKey());
-
-        BtcTransaction tx1 = new BtcTransaction(btcParams);
-        tx1.addInput(txs.getOutput(0));
-        tx1.getInput(0).disconnect();
-        tx1.addOutput(Coin.COIN, new BtcECKey());
-        Transaction rskTx = new Transaction(TO_ADDRESS, DUST_AMOUNT, NONCE, GAS_PRICE, GAS_LIMIT, DATA, Constants.REGTEST_CHAIN_ID);
-        provider0.getReleaseTransactionSet().add(tx1, 1L, rskTx.getHash());
-
-        provider0.save();
-
-        track.commit();
-
-        track = repository.startTracking();
-        BridgeStorageProvider provider = new BridgeStorageProvider(track, PrecompiledContracts.BRIDGE_ADDR, bridgeConstants, activations);
-
-        BlockGenerator blockGenerator = new BlockGenerator();
-        List<Block> blocks = blockGenerator.getSimpleBlockChain(blockGenerator.getGenesisBlock(), 10);
-
-        BlockChainBuilder builder = new BlockChainBuilder();
-        builder.setTesting(true).build();
-
-        for (Block block : blocks)
-            builder.getBlockStore().saveBlock(block, TEST_DIFFICULTY, true);
-
-        org.ethereum.core.Block rskCurrentBlock = blocks.get(9);
+        BridgeStorageProvider provider = new BridgeStorageProvider(repository, PrecompiledContracts.BRIDGE_ADDR, bridgeConstants, activations);
+        UTXO utxo = new UTXO(Sha256Hash.wrap(HashUtil.randomHash()),0, Coin.COIN.multiply(2), 1, false, activeFederation.getP2SHScript());
+        provider.getNewFederationBtcUTXOs().add(utxo);
+        provider.setNewFederation(activeFederation);
 
         BridgeSupport bridgeSupport = getBridgeSupport(
-                bridgeConstants, provider, track, mockedEventLogger, rskCurrentBlock, null, activations);
+                bridgeConstants, provider, repository, mockedEventLogger, mock(Block.class), null, activations);
 
+        Transaction releaseTx = new Transaction(PrecompiledContracts.BRIDGE_ADDR.toString(),
+                co.rsk.core.Coin.fromBitcoin(Coin.COIN).asBigInteger(), NONCE, GAS_PRICE, GAS_LIMIT, DATA, Constants.REGTEST_CHAIN_ID);
+        releaseTx.sign(new ECKey().getPrivKeyBytes());
+        bridgeSupport.releaseBtc(releaseTx);
+
+        Transaction rskTx = new Transaction(TO_ADDRESS, DUST_AMOUNT, NONCE, GAS_PRICE, GAS_LIMIT, DATA, Constants.REGTEST_CHAIN_ID);
         bridgeSupport.updateCollections(rskTx);
+
         verify(mockedEventLogger, atLeastOnce()).logReleaseBtcRequested(any(byte[].class), any(BtcTransaction.class), any(Coin.class));
     }
 
@@ -558,54 +529,37 @@ public class BridgeSupportTest {
         BridgeEventLoggerImpl eventLogger = new BridgeEventLoggerImpl(bridgeConstants, activations, logInfo);
 
         Repository repository = createRepository();
-        Repository track = repository.startTracking();
 
-        BridgeStorageProvider provider0 = new BridgeStorageProvider(track, PrecompiledContracts.BRIDGE_ADDR, bridgeConstants, activations);
-        UTXO utxo = new UTXO(Sha256Hash.wrap(HashUtil.randomHash()),0, Coin.COIN.multiply(2), 1, false, new Script(new byte[]{}));
-        provider0.getNewFederationBtcUTXOs().add(utxo);
+        Federation activeFederation = new Federation(
+                FederationTestUtils.getFederationMembers(3),
+                Instant.ofEpochMilli(1000),
+                0L,
+                NetworkParameters.fromID(NetworkParameters.ID_REGTEST)
+        );
 
-        BtcTransaction txs = new BtcTransaction(btcParams);
-        txs.addOutput(Coin.FIFTY_COINS, new BtcECKey());
-
-        BtcTransaction tx1 = new BtcTransaction(btcParams);
-        tx1.addInput(txs.getOutput(0));
-        tx1.getInput(0).disconnect();
-        tx1.addOutput(Coin.COIN, new BtcECKey());
-        Transaction rskTx = new Transaction(TO_ADDRESS, DUST_AMOUNT, NONCE, GAS_PRICE, GAS_LIMIT, DATA, Constants.REGTEST_CHAIN_ID);
-        provider0.getReleaseTransactionSet().add(tx1, 1L, rskTx.getHash());
-
-        provider0.save();
-
-        track.commit();
-
-        track = repository.startTracking();
-        BridgeStorageProvider provider = new BridgeStorageProvider(track, PrecompiledContracts.BRIDGE_ADDR, bridgeConstants, activations);
-
-        BlockGenerator blockGenerator = new BlockGenerator();
-        List<Block> blocks = blockGenerator.getSimpleBlockChain(blockGenerator.getGenesisBlock(), 10);
-
-        BlockChainBuilder builder = new BlockChainBuilder();
-        builder.setTesting(true).build();
-
-        for (Block block : blocks)
-            builder.getBlockStore().saveBlock(block, TEST_DIFFICULTY, true);
-
-        org.ethereum.core.Block rskCurrentBlock = blocks.get(9);
+        BridgeStorageProvider provider = new BridgeStorageProvider(repository, PrecompiledContracts.BRIDGE_ADDR, bridgeConstants, activations);
+        UTXO utxo = new UTXO(Sha256Hash.wrap(HashUtil.randomHash()),0, Coin.COIN.multiply(2), 1, false, activeFederation.getP2SHScript());
+        provider.getNewFederationBtcUTXOs().add(utxo);
+        provider.setNewFederation(activeFederation);
 
         BridgeSupport bridgeSupport = getBridgeSupport(
-                bridgeConstants, provider, track, eventLogger, rskCurrentBlock, null, activations);
+                bridgeConstants, provider, repository, eventLogger, mock(Block.class), null, activations);
 
-        RskAddress rskAddr = mock(RskAddress.class);
-        when(rskAddr.toString()).thenReturn("00000000000000000001");
+        Transaction releaseTx = new Transaction(PrecompiledContracts.BRIDGE_ADDR.toString(),
+                co.rsk.core.Coin.fromBitcoin(Coin.COIN).asBigInteger(), NONCE, GAS_PRICE, GAS_LIMIT, DATA, Constants.REGTEST_CHAIN_ID);
+        releaseTx.sign(new ECKey().getPrivKeyBytes());
+        bridgeSupport.releaseBtc(releaseTx);
 
-        Transaction rskTx1 = mock(Transaction.class);
-        when(rskTx1.getSender()).thenReturn(rskAddr);
+        Transaction rskTx = new Transaction(TO_ADDRESS, DUST_AMOUNT, NONCE, GAS_PRICE, GAS_LIMIT, DATA, Constants.REGTEST_CHAIN_ID);
+        rskTx.sign(new ECKey().getPrivKeyBytes());
+        bridgeSupport.updateCollections(rskTx);
 
-        bridgeSupport.updateCollections(rskTx1);
-
-        Assert.assertEquals(0, provider.getReleaseTransactionSet().getEntries().size());
-        Assert.assertEquals(1, provider.getRskTxsWaitingForSignatures().size());
-        Assert.assertEquals(LogInfo.byteArrayToList(BridgeEvents.RELEASE_REQUESTED.getEvent().encodeEventTopics(rskTx.getHash().getBytes(), tx1.getHash().getBytes())), logInfo.get(1).getTopics());
+        Assert.assertEquals(1, provider.getReleaseTransactionSet().getEntries().size());
+        Assert.assertEquals(0, provider.getReleaseRequestQueue().getEntries().size());
+        ReleaseTransactionSet.Entry entry = (ReleaseTransactionSet.Entry)provider.getReleaseTransactionSet().getEntries().toArray()[0];
+        Assert.assertEquals(LogInfo.byteArrayToList(
+                BridgeEvents.RELEASE_REQUESTED.getEvent().encodeEventTopics(releaseTx.getHash().getBytes(), entry.getTransaction().getHash().getBytes())),
+                logInfo.get(1).getTopics());
     }
 
     @Test
